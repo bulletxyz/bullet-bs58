@@ -40,7 +40,7 @@ pub fn encode32(v: &[u8; 32]) -> [u8; 48] {
 
 /// Append the encoded 32-byte array into an output string.  The result
 /// can be trimed as well.
-pub fn encode32_append(v: &[u8; 32], output: &mut String, trim: bool) {
+pub fn encode32_append(v: &[u8; 32], trim: bool, output: &mut String) {
     let res = encode32(v);
 
     // strip the leading zeros
@@ -105,8 +105,8 @@ mod tests {
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x01,
             ],
-            &mut output,
             true,
+            &mut output,
         );
         assert_eq!("2", output,);
     }

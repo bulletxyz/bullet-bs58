@@ -25,7 +25,7 @@ fn encode_bench(c: &mut Criterion) {
             let mut output = String::with_capacity(44);
             b.iter(|| {
                 output.clear();
-                encode32_append(&[42u8; 32], &mut output, true)
+                encode32_append(&[42u8; 32], true, &mut output)
             });
         });
     }
