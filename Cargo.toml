@@ -1,0 +1,13 @@
+[package]
+name = "bullet-bs58"
+version = "0.1.0"
+edition = "2024"
+
+
+[[bench]]
+name="encode"
+harness = false
+
+[dev-dependencies]
+criterion = "0.5"
+bs58 = "0.5.1"
