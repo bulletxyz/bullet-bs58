@@ -1,7 +1,16 @@
 //! Encode base58.
 
 /// Encoding alphabet from Bitcoin.
-static TABLE: [u8; 58] = *b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+const TABLE: [u8; 58] = *b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+const REVERSE: [u8; 256] = {
+    let mut i = 0;
+    let mut res = [255u8; 256];
+    while i < TABLE.len() {
+        res[TABLE[i] as usize] = i as u8;
+        i += 1;
+    }
+    res
+};
 
 /// Encode a fixed 32-byte array into a 48 byte array.
 pub fn encode32(v: &[u8; 32]) -> [u8; 48] {
@@ -39,13 +48,12 @@ pub fn encode32(v: &[u8; 32]) -> [u8; 48] {
 }
 
 /// Append the encoded 32-byte array into an output string.  The result
-/// can be trimed as well.
-pub fn encode32_append(v: &[u8; 32], trim: bool, output: &mut String) {
+/// can be trimed as well by striping leading `1` from the string.
+pub fn encode32_append(v: &[u8; 32], keep: usize, output: &mut String) {
     let res = encode32(v);
 
-    // strip the leading zeros
     let mut start = 0;
-    while trim && start < 48 && res[start] == b'1' {
+    while start < 47 && 48 - start > keep && res[start..start + 2] == *b"11" {
         start += 1;
     }
 
@@ -53,6 +61,29 @@ pub fn encode32_append(v: &[u8; 32], trim: bool, output: &mut String) {
     let s = unsafe { core::str::from_utf8_unchecked(&res[start..]) };
 
     output.push_str(s);
+}
+
+/// Parse a base58 string into an 32-byte array.
+pub fn parse32(input: &[u8]) -> Option<[u8; 32]> {
+    let mut num = [0u64; 4];
+    for ch in input {
+        let mut carry = REVERSE[*ch as usize] as u64;
+        if carry >= 58 {
+            // invalid char
+            return None;
+        }
+        for p in num.iter_mut() {
+            let v = (*p as u128) * 58 + carry as u128;
+            *p = v as u64;
+            carry = (v >> 64) as u64;
+        }
+        if carry != 0 {
+            // overflow 32-bytes
+            return None;
+        }
+    }
+    let res: [_; 4] = core::array::from_fn(|i| u64::to_be_bytes(num[3 - i]));
+    Some(unsafe { core::mem::transmute::<[[u8; 8]; 4], [u8; 32]>(res) })
 }
 
 #[cfg(test)]
@@ -84,7 +115,6 @@ mod tests {
             ])
         );
     }
-
     #[test]
     fn test_complex() {
         assert_eq!(
@@ -105,9 +135,22 @@ mod tests {
                 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                 0x00, 0x00, 0x00, 0x01,
             ],
-            true,
+            3,
             &mut output,
         );
-        assert_eq!("2", output,);
+        assert_eq!("112", output);
+    }
+    #[test]
+    fn test_parse_same() {
+        for key in ["12", "19cfBkPsoQ2NPHYPi7b69bcQG8FKfNc33k2UfRxiPFyd9"] {
+            let x = parse32(key.as_bytes()).expect("parse failed");
+            let mut output = String::new();
+            encode32_append(&x, 0, &mut output);
+            assert_eq!(key, output);
+        }
+    }
+    #[test]
+    fn test_parse_overflow() {
+        assert_eq!(None, parse32(&[b'z'; 44]));
     }
 }
