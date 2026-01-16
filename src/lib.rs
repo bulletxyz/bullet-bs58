@@ -53,7 +53,7 @@ pub fn encode32_append(v: &[u8; 32], keep: usize, output: &mut String) {
     let res = encode32(v);
 
     let mut start = 0;
-    while start < 47 && 48 - start > keep && res[start..start + 2] == *b"11" {
+    while start < 47 && 48 - start > keep && res[start] == b'1' {
         start += 1;
     }
 
@@ -142,7 +142,7 @@ mod tests {
     }
     #[test]
     fn test_parse_same() {
-        for key in ["12", "19cfBkPsoQ2NPHYPi7b69bcQG8FKfNc33k2UfRxiPFyd9"] {
+        for key in ["2", "9cfBkPsoQ2NPHYPi7b69bcQG8FKfNc33k2UfRxiPFyd9"] {
             let x = parse32(key.as_bytes()).expect("parse failed");
             let mut output = String::new();
             encode32_append(&x, 0, &mut output);
