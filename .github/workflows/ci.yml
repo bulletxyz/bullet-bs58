@@ -24,14 +24,26 @@ jobs:
 
   semver-checks:
     runs-on: ubuntu-latest
-    # Only meaningful once a baseline tag exists.
     if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Check for baseline tag
+        id: baseline
+        run: |
+          if git tag --list 'v*' | grep -q .; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No v* tag yet — skipping semver-checks until first release."
+          fi
+
       - uses: dtolnay/rust-toolchain@stable
+        if: steps.baseline.outputs.exists == 'true'
+
       - uses: obi1kenobi/cargo-semver-checks-action@v2
+        if: steps.baseline.outputs.exists == 'true'
         with:
-          # Falls back to a no-op if no prior tag exists.
           feature-group: all-features
