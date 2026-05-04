@@ -7,6 +7,7 @@ on:
 permissions:
   pull-requests: write
   contents: write
+  id-token: write # required for crates.io OIDC trusted publishing
 
 jobs:
   release-plz:
@@ -30,8 +31,11 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
+      - name: Authenticate with crates.io
+        id: cargo-auth
+        uses: rust-lang/crates-io-auth-action@v1.0.4
+
       - uses: release-plz/action@v0.5.128
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
-          # CARGO_REGISTRY_TOKEN is only needed once `publish = true` in Cargo.toml.
-          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ steps.cargo-auth.outputs.token }}
