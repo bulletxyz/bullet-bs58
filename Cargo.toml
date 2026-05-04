@@ -1,6 +1,6 @@
 [package]
 name = "bullet-bs58"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 license = "MIT"
 description = "Fast fixed-size base58 encoding and decoding for 32-byte arrays."
