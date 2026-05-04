@@ -2,10 +2,16 @@
 name = "bullet-bs58"
 version = "0.1.0"
 edition = "2024"
-
+license = "MIT"
+description = "Fast fixed-size base58 encoding and decoding for 32-byte arrays."
+homepage = "https://www.bullet.xyz"
+repository = "https://github.com/bulletxyz/bullet-bs58"
+readme = "README.md"
+keywords = ["base58", "encoding", "bullet"]
+categories = ["encoding", "no-std"]
 
 [[bench]]
-name="encode"
+name = "encode"
 harness = false
 
 [dev-dependencies]

@@ -1,0 +1,25 @@
+[workspace]
+# Run `cargo-semver-checks` to validate that the bumped version matches the
+# scope of the API changes (commit-message intent vs actual public-API diff).
+semver_check = true
+
+# Auto-generate CHANGELOG.md from conventional commits.
+changelog_update = true
+
+# Open release PRs against the default branch instead of pushing tags directly.
+pr_branch_prefix = "release-plz/"
+
+[changelog]
+# Mirror the bullet repo's git-cliff config: skip noise, group user-facing.
+commit_parsers = [
+    { message = "^feat", group = "Features" },
+    { message = "^fix", group = "Bug Fixes" },
+    { message = "^perf", group = "Performance" },
+    { message = "^doc", group = "Documentation" },
+    { message = "^refactor", group = "Refactor" },
+    { message = "^style", skip = true },
+    { message = "^test", skip = true },
+    { message = "^chore", skip = true },
+    { message = "^ci", skip = true },
+    { message = "^build", skip = true },
+]
