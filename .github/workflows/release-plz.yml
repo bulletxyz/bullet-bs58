@@ -30,7 +30,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - uses: release-plz/release-plz-action@v0.5
+      - uses: release-plz/action@v0.5.128
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           # CARGO_REGISTRY_TOKEN is only needed once `publish = true` in Cargo.toml.
