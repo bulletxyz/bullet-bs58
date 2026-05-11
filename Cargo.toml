@@ -15,5 +15,5 @@ name = "encode"
 harness = false
 
 [dev-dependencies]
-criterion = "=0.5.1"
+criterion = "=0.8.2"
 bs58 = "=0.5.1"
