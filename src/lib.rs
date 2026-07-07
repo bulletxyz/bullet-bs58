@@ -47,14 +47,27 @@ pub fn encode32(v: &[u8; 32]) -> [u8; 48] {
     res
 }
 
-/// Append the encoded 32-byte array into an output string.  The result
-/// can be trimed as well by striping leading `1` from the string.
-pub fn encode32_append(v: &[u8; 32], keep: usize, output: &mut String) {
+/// Append the encoded 32-byte array into an output string. This is
+/// the canonical encoding with as much leading `1` digits as zeros
+/// are in the input.
+pub fn encode32_append(v: &[u8; 32], output: &mut String) {
     let res = encode32(v);
 
+    // strip all ones
     let mut start = 0;
-    while start < 47 && 48 - start > keep && res[start] == b'1' {
+    for ch in res {
+        if ch != b'1' {
+            break;
+        }
         start += 1;
+    }
+
+    // add as many back as there are zeros in the input
+    for ch in v {
+        if *ch != 0 || start == 0 {
+            break;
+        }
+        start -= 1;
     }
 
     // Safety: our alphabet is only ASCII chars
@@ -127,30 +140,71 @@ mod tests {
         );
     }
     #[test]
-    fn test_one_string() {
-        let mut output = String::new();
-        encode32_append(
-            &[
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                0x00, 0x00, 0x00, 0x01,
-            ],
-            3,
-            &mut output,
-        );
-        assert_eq!("112", output);
-    }
-    #[test]
-    fn test_parse_same() {
-        for key in ["2", "9cfBkPsoQ2NPHYPi7b69bcQG8FKfNc33k2UfRxiPFyd9"] {
-            let x = parse32(key.as_bytes()).expect("parse failed");
-            let mut output = String::new();
-            encode32_append(&x, 0, &mut output);
-            assert_eq!(key, output);
-        }
-    }
-    #[test]
     fn test_parse_overflow() {
         assert_eq!(None, parse32(&[b'z'; 44]));
+    }
+    #[test]
+    fn test_append_matches_bs58() {
+        let cases = [
+            // 38 chars
+            [
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0,
+            ],
+            // 39 chars
+            [
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0,
+            ],
+            // 40 chars
+            [
+                0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0,
+            ],
+            // 41 chars
+            [
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 252, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0,
+            ],
+            // 42 chars
+            [
+                0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0,
+            ],
+            // 43 chars
+            [
+                0, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0,
+            ],
+            [0u8; 32],
+            {
+                let mut x = [0u8; 32];
+                x[31] = 1;
+                x
+            },
+            {
+                let mut x = [0u8; 32];
+                x[0] = 1;
+                x
+            },
+            {
+                let mut x = [0u8; 32];
+                x[0] = 0xff;
+                x
+            },
+            [0xff; 32],
+            [
+                0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc, 0xde, 0xf0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66,
+                0x77, 0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x00, 0x13, 0x57, 0x9b, 0xdf,
+                0x24, 0x68, 0xac, 0xe0,
+            ],
+        ];
+
+        for bytes in cases {
+            let mut left = String::new();
+            encode32_append(&bytes, &mut left);
+            let right = bs58::encode(bytes).into_string();
+            assert_eq!(left, right, "{} vs {}", left.len(), right.len());
+        }
     }
 }
